@@ -11,7 +11,9 @@ class ResumeService {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
-  Future<String> createResume(Map<String, dynamic> resumeData) async {
+  Future<String> createResume({
+    required Map<String, dynamic> resumeData,
+  }) async {
     final user = _auth.currentUser;
 
     if (user == null) {
@@ -29,6 +31,38 @@ class ResumeService {
     });
 
     return docRef.id;
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> getMyResumes() {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception('User must be logged in.');
+    }
+
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('resumes')
+        .orderBy('updatedAt', descending: true)
+        .snapshots();
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> getResumeById({
+    required String resumeId,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception('User must be logged in.');
+    }
+
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('resumes')
+        .doc(resumeId)
+        .get();
   }
 
   Future<void> updateResume({
@@ -52,22 +86,9 @@ class ResumeService {
     });
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getMyResumes() {
-    final user = _auth.currentUser;
-
-    if (user == null) {
-      throw Exception('User must be logged in.');
-    }
-
-    return _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('resumes')
-        .orderBy('updatedAt', descending: true)
-        .snapshots();
-  }
-
-  Future<void> deleteResume(String resumeId) async {
+  Future<void> deleteResume({
+    required String resumeId,
+  }) async {
     final user = _auth.currentUser;
 
     if (user == null) {
