@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /careers/{careerId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /recommendationRules/{ruleId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /users/{userId} {
+      allow create: if isOwner(userId);
+      allow read, update, delete: if isOwner(userId);
+
+      match /skillGapResults/{resultId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /resumes/{resumeId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /portfolioProjects/{projectId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /recommendations/{recommendationId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}
