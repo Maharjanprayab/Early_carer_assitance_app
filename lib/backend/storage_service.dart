@@ -40,7 +40,9 @@ class StorageService {
     return uploadTask.ref.getDownloadURL();
   }
 
-  Future<void> deleteFileByUrl(String fileUrl) async {
+  Future<void> deleteFileByUrl({
+    required String fileUrl,
+  }) async {
     if (fileUrl.trim().isEmpty) {
       return;
     }

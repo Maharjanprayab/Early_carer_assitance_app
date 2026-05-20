@@ -56,6 +56,23 @@ class PortfolioService {
         .snapshots();
   }
 
+  Future<DocumentSnapshot<Map<String, dynamic>>> getProjectById({
+    required String projectId,
+  }) {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception('User must be logged in.');
+    }
+
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('portfolioProjects')
+        .doc(projectId)
+        .get();
+  }
+
   Future<void> updateProject({
     required String projectId,
     required Map<String, dynamic> projectData,
@@ -77,7 +94,9 @@ class PortfolioService {
     });
   }
 
-  Future<void> deleteProject(String projectId) async {
+  Future<void> deleteProject({
+    required String projectId,
+  }) async {
     final user = _auth.currentUser;
 
     if (user == null) {
