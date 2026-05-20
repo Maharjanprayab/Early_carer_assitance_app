@@ -43,7 +43,7 @@ class RecommendationService {
           'basedOnCareerId': careerId,
           'missingSkill': skill,
           'type': data['type'] ?? 'Course',
-          'title': data['title'] ?? data['recommendationTitle'] ?? '',
+          'title': data['title'] ?? '',
           'provider': data['provider'] ?? '',
           'url': data['url'] ?? '',
           'priority': data['priority'] ?? 'Medium',

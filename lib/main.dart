@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import 'screens/recommendations/test_recommendation_screen.dart';
+import 'screens/auth/test_auth_screen.dart';
 import 'screens/skills/test_skill_gap_screen.dart';
 
 import 'firebase_options.dart';
@@ -27,7 +29,7 @@ class EarlyCareerApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: Colors.blue,
       ),
-      home: TestSkillGapScreen(),
+      home: TestRecommendationScreen(),
     );
   }
 }
