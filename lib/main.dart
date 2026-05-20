@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
-import 'screens/auth/test_auth_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +25,23 @@ class EarlyCareerApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: Colors.blue,
       ),
-      home: const TestAuthScreen(),
+      home: const FirebaseConnectionTestScreen(),
+    );
+  }
+}
+
+class FirebaseConnectionTestScreen extends StatelessWidget {
+  const FirebaseConnectionTestScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          'Firebase connected successfully',
+          style: TextStyle(fontSize: 20),
+        ),
+      ),
     );
   }
 }
