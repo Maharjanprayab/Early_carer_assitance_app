@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
+import '../../models/resume_data.dart';
 
 import '../../backend/auth_service.dart';
 import '../../backend/resume_service.dart';
@@ -34,42 +35,45 @@ class _TestResumeScreenState extends State<TestResumeScreen> {
     }
   }
 
-  Map<String, dynamic> _sampleResumeData() {
-    return {
-      'personalDetails': {
-        'fullName': 'Resume Test Student',
-        'email': 'resumetest@example.com',
-        'phone': '0400000000',
-        'location': 'Melbourne, Australia',
-      },
-      'summary':
-          'Entry-level IT student interested in software development and backend systems.',
-      'education': [
-        {
-          'institution': 'Kent Institute Australia',
-          'degree': 'Bachelor of Information Technology',
-          'startYear': '2024',
-          'endYear': 'Present',
-        }
-      ],
-      'skills': [
-        'Flutter',
-        'Firebase',
-        'Firestore',
-        'Dart',
-        'Git',
-      ],
-      'projects': [
-        {
-          'title': 'Early Career Assistance App',
-          'description':
-              'A Flutter and Firebase app that helps students explore careers and analyse skill gaps.',
-          'technologies': ['Flutter', 'Firebase', 'Firestore'],
-        }
-      ],
-      'experience': [],
-    };
-  }
+  ResumeData _sampleResumeData() {
+  return const ResumeData(
+    id: '',
+    personalDetails: {
+      'fullName': 'Resume Test Student',
+      'email': 'resumetest@example.com',
+      'phone': '0400000000',
+      'location': 'Melbourne, Australia',
+    },
+    summary:
+        'Entry-level IT student interested in software development and backend systems.',
+    education: [
+      {
+        'institution': 'Kent Institute Australia',
+        'degree': 'Bachelor of Information Technology',
+        'startYear': '2024',
+        'endYear': 'Present',
+      }
+    ],
+    skills: [
+      'Flutter',
+      'Firebase',
+      'Firestore',
+      'Dart',
+      'Git',
+    ],
+    projects: [
+      {
+        'title': 'Early Career Assistance App',
+        'description':
+            'A Flutter and Firebase app that helps students explore careers and analyse skill gaps.',
+        'technologies': ['Flutter', 'Firebase', 'Firestore'],
+      }
+    ],
+    experience: [],
+    createdAt: null,
+    updatedAt: null,
+  );
+}
 
   Future<void> _createResume() async {
     try {
@@ -103,7 +107,7 @@ class _TestResumeScreenState extends State<TestResumeScreen> {
         return;
       }
 
-      await _resumeService.updateResume(
+      await _resumeService.updateResumeFields(
         resumeId: resumeId,
         resumeData: {
           'summary':
@@ -164,7 +168,7 @@ class _TestResumeScreenState extends State<TestResumeScreen> {
     });
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>>? _resumeStream() {
+  Stream<List<ResumeData>>? _resumeStream() {
     if (_authService.currentUser == null) {
       return null;
     }
@@ -210,7 +214,7 @@ class _TestResumeScreenState extends State<TestResumeScreen> {
             Expanded(
               child: stream == null
                   ? const Text('Login or create a resume to view data.')
-                  : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  : StreamBuilder<List<ResumeData>>(
                       stream: stream,
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
@@ -224,33 +228,28 @@ class _TestResumeScreenState extends State<TestResumeScreen> {
                           );
                         }
 
-                        final docs = snapshot.data?.docs ?? [];
+                        final resumes = snapshot.data ?? [];
 
-                        if (docs.isEmpty) {
+                        if (resumes.isEmpty) {
                           return const Text('No resumes found.');
                         }
 
                         return ListView.separated(
-                          itemCount: docs.length,
+                          itemCount: resumes.length,
                           separatorBuilder: (context, index) =>
                               const SizedBox(height: 8),
                           itemBuilder: (context, index) {
-                            final resume = docs[index].data();
-
-                            final personalDetails =
-                                Map<String, dynamic>.from(
-                              resume['personalDetails'] ?? {},
-                            );
+                            final resume = resumes[index];
 
                             final fullName =
-                                personalDetails['fullName'] ?? 'No name';
+                                resume.personalDetails['fullName']?.toString() ?? 'No name';
                             final summary =
-                                resume['summary'] ?? 'No summary';
+                                resume.summary.isEmpty ? 'No summary' : resume.summary;
 
                             return Card(
                               child: ListTile(
-                                title: Text(fullName.toString()),
-                                subtitle: Text(summary.toString()),
+                                title: Text(fullName),
+                                subtitle: Text(summary),
                               ),
                             );
                           },

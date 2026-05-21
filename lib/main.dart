@@ -32,7 +32,7 @@ class EarlyCareerApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: Colors.blue,
       ),
-      home: TestPortfolioScreen(),
+      home: TestResumeScreen(),
     );
   }
 }
