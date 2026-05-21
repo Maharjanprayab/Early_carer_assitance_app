@@ -11,34 +11,43 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Career data is readable by logged-in users.
+    // Users should not be able to edit career reference data from the app.
     match /careers/{careerId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if false;
     }
 
+    // Recommendation rules are readable by logged-in users.
+    // Only admins/developers should edit these manually in Firebase Console.
     match /recommendationRules/{ruleId} {
       allow read: if isSignedIn();
       allow write: if false;
     }
 
+    // User profile document.
     match /users/{userId} {
       allow create: if isOwner(userId);
       allow read, update, delete: if isOwner(userId);
 
+      // Skill gap analyzer results.
       match /skillGapResults/{resultId} {
-        allow read, write: if isOwner(userId);
+        allow read, create, update, delete: if isOwner(userId);
       }
 
+      // Resume builder data.
       match /resumes/{resumeId} {
-        allow read, write: if isOwner(userId);
+        allow read, create, update, delete: if isOwner(userId);
       }
 
+      // Portfolio showcase projects.
       match /portfolioProjects/{projectId} {
-        allow read, write: if isOwner(userId);
+        allow read, create, update, delete: if isOwner(userId);
       }
 
+      // Personalised recommendations.
       match /recommendations/{recommendationId} {
-        allow read, write: if isOwner(userId);
+        allow read, create, update, delete: if isOwner(userId);
       }
     }
   }

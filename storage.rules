@@ -11,9 +11,10 @@ service firebase.storage {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Portfolio image uploads.
     match /portfolio_uploads/{userId}/{projectId}/{fileName} {
       allow read, write: if isOwner(userId)
-        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.size < 25 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }
   }

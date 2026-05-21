@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../backend/career_service.dart';
+import '../../models/career.dart';
 
 class TestCareerScreen extends StatelessWidget {
   TestCareerScreen({super.key});
@@ -14,7 +14,7 @@ class TestCareerScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Career Service Test'),
       ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      body: StreamBuilder<List<Career>>(
         stream: _careerService.getCareers(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -29,9 +29,9 @@ class TestCareerScreen extends StatelessWidget {
             );
           }
 
-          final docs = snapshot.data?.docs ?? [];
+          final careers = snapshot.data ?? [];
 
-          if (docs.isEmpty) {
+          if (careers.isEmpty) {
             return const Center(
               child: Text('No careers found. Add careers in Firestore.'),
             );
@@ -39,16 +39,10 @@ class TestCareerScreen extends StatelessWidget {
 
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
+            itemCount: careers.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              final career = docs[index].data();
-
-              final title = career['title'] ?? 'No title';
-              final category = career['category'] ?? 'No category';
-              final description = career['description'] ?? 'No description';
-              final requiredSkills =
-                  List<String>.from(career['requiredSkills'] ?? []);
+              final career = careers[index];
 
               return Card(
                 child: Padding(
@@ -57,16 +51,16 @@ class TestCareerScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title.toString(),
+                        career.title,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 4),
-                      Text(category.toString()),
+                      Text(career.category),
                       const SizedBox(height: 8),
-                      Text(description.toString()),
+                      Text(career.description),
                       const SizedBox(height: 8),
                       Text(
-                        'Required skills: ${requiredSkills.join(', ')}',
+                        'Required skills: ${career.requiredSkills.join(', ')}',
                       ),
                     ],
                   ),

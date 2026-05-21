@@ -1,1 +1,34 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"early-career-assistance-app","appId":"1:614372402994:android:b53c0945ac6ce3e68b592b","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"early-career-assistance-app","configurations":{"android":"1:614372402994:android:b53c0945ac6ce3e68b592b","ios":"1:614372402994:ios:6e7049bbd62012d68b592b","macos":"1:614372402994:ios:6e7049bbd62012d68b592b","web":"1:614372402994:web:0fea54f18916f8a28b592b","windows":"1:614372402994:web:7d918f742cddd45d8b592b"}}}}},"firestore":{"database":"(default)","location":"australia-southeast2","rules":"firestore.rules","indexes":"firestore.indexes.json"},"storage":{"rules":"storage.rules"}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "early-career-assistance-app",
+          "appId": "1:614372402994:android:b53c0945ac6ce3e68b592b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "early-career-assistance-app",
+          "configurations": {
+            "android": "1:614372402994:android:b53c0945ac6ce3e68b592b",
+            "ios": "1:614372402994:ios:6e7049bbd62012d68b592b",
+            "macos": "1:614372402994:ios:6e7049bbd62012d68b592b",
+            "web": "1:614372402994:web:0fea54f18916f8a28b592b",
+            "windows": "1:614372402994:web:7d918f742cddd45d8b592b"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "location": "australia-southeast2",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}
