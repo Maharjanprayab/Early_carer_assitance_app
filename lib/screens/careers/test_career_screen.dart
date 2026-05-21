@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../backend/career_service.dart';
-import '../../models/career.dart';
+import '../../backend/backend.dart';
+import '../../models/models.dart';
 
 class TestCareerScreen extends StatelessWidget {
   TestCareerScreen({super.key});

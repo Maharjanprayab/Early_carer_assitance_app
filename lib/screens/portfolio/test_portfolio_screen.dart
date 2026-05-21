@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../models/portfolio_project.dart';
-
-import '../../backend/auth_service.dart';
-import '../../backend/portfolio_service.dart';
+import '../../backend/backend.dart';
+import '../../models/models.dart';
 
 class TestPortfolioScreen extends StatefulWidget {
   const TestPortfolioScreen({super.key});

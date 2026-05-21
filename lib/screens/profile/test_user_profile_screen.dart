@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../backend/auth_service.dart';
-import '../../backend/user_service.dart';
-import '../../models/app_user.dart';
+import '../../backend/backend.dart';
+import '../../models/models.dart';
 
 class TestUserProfileScreen extends StatefulWidget {
   const TestUserProfileScreen({super.key});

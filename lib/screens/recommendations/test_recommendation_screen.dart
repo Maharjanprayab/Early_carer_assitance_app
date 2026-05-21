@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../models/recommendation_item.dart';
-
-import '../../backend/auth_service.dart';
-import '../../backend/recommendation_service.dart';
-import '../../backend/skill_gap_service.dart';
+import '../../backend/backend.dart';
+import '../../models/models.dart';
 
 class TestRecommendationScreen extends StatefulWidget {
   const TestRecommendationScreen({super.key});

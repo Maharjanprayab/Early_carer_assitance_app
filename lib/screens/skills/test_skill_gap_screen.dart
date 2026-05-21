@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../backend/auth_service.dart';
-import '../../backend/skill_gap_service.dart';
+import '../../backend/backend.dart';
 
 class TestSkillGapScreen extends StatefulWidget {
   const TestSkillGapScreen({super.key});

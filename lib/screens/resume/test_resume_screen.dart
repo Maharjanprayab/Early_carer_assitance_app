@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../models/resume_data.dart';
-
-import '../../backend/auth_service.dart';
-import '../../backend/resume_service.dart';
+import '../../backend/backend.dart';
+import '../../models/models.dart';
 
 class TestResumeScreen extends StatefulWidget {
   const TestResumeScreen({super.key});
