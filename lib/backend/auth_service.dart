@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/app_user.dart';
+
 class AuthService {
-  AuthService({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
@@ -33,15 +33,17 @@ class AuthService {
         throw Exception('User account was not created.');
       }
 
-      await _firestore.collection('users').doc(user.uid).set({
-        'uid': user.uid,
-        'fullName': fullName.trim(),
-        'email': email.trim(),
-        'degree': degree.trim(),
-        'careerInterest': '',
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final appUser = AppUser(
+        uid: user.uid,
+        fullName: fullName.trim(),
+        email: email.trim(),
+        degree: degree.trim(),
+        careerInterest: '',
+        createdAt: null,
+        updatedAt: null,
+      );
+
+      await _firestore.collection('users').doc(user.uid).set(appUser.toMap());
 
       return credential;
     } on FirebaseAuthException catch (e) {
