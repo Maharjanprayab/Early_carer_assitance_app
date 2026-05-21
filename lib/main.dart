@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-import 'screens/careers/test_career_screen.dart';
-import 'screens/recommendations/test_recommendation_screen.dart';
-import 'screens/auth/test_auth_screen.dart';
-import 'screens/skills/test_skill_gap_screen.dart';
-import 'screens/resume/test_resume_screen.dart';
-import 'screens/portfolio/test_portfolio_screen.dart';
-import 'screens/profile/test_user_profile_screen.dart';
+import 'screens/dev_tests/dev_tests.dart';
 
 import 'firebase_options.dart';
 
