@@ -49,19 +49,17 @@ class _TestSkillGapScreenState extends State<TestSkillGapScreen> {
         userSkills: ['HTML', 'CSS', 'Python'],
       );
 
-      final matchedSkills = List<String>.from(result['matchedSkills']);
-      final missingSkills = List<String>.from(result['missingSkills']);
-
       setState(() {
-        _message = '''
-Career: ${result['careerTitle']}
-Match: ${result['matchPercentage']}%
+        _message =
+            '''
+Career: ${result.careerTitle}
+Match: ${result.matchPercentage}%
 
 Matched skills:
-${matchedSkills.join(', ')}
+${result.matchedSkills.join(', ')}
 
 Missing skills:
-${missingSkills.join(', ')}
+${result.missingSkills.join(', ')}
 ''';
       });
     } catch (e) {
@@ -80,19 +78,17 @@ ${missingSkills.join(', ')}
         userSkills: ['Firebase', 'Git', 'Dart'],
       );
 
-      final matchedSkills = List<String>.from(result['matchedSkills']);
-      final missingSkills = List<String>.from(result['missingSkills']);
-
       setState(() {
-        _message = '''
-Career: ${result['careerTitle']}
-Match: ${result['matchPercentage']}%
+        _message =
+            '''
+Career: ${result.careerTitle}
+Match: ${result.matchPercentage}%
 
 Matched skills:
-${matchedSkills.join(', ')}
+${result.matchedSkills.join(', ')}
 
 Missing skills:
-${missingSkills.join(', ')}
+${result.missingSkills.join(', ')}
 ''';
       });
     } catch (e) {
@@ -113,9 +109,7 @@ ${missingSkills.join(', ')}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Skill Gap Backend Test'),
-      ),
+      appBar: AppBar(title: const Text('Skill Gap Backend Test')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -133,10 +127,7 @@ ${missingSkills.join(', ')}
               child: const Text('Test Backend Skill Gap'),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: _logout,
-              child: const Text('Logout'),
-            ),
+            OutlinedButton(onPressed: _logout, child: const Text('Logout')),
           ],
         ),
       ),

@@ -45,9 +45,7 @@ class _TestRecommendationScreenState extends State<TestRecommendationScreen> {
         userSkills: ['HTML', 'CSS', 'Python'],
       );
 
-      final missingSkills = List<String>.from(
-        skillGapResult['missingSkills'] ?? [],
-      );
+      final missingSkills = skillGapResult.missingSkills;
 
       await _recommendationService.generateRecommendations(
         careerId: 'frontend_developer',

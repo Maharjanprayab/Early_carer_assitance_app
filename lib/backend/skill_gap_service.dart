@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/skill_gap_result.dart';
+
 class SkillGapService {
   SkillGapService({
     FirebaseFirestore? firestore,
@@ -11,7 +13,7 @@ class SkillGapService {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
-  Future<Map<String, dynamic>> analyseSkillGap({
+  Future<SkillGapResult> analyseSkillGap({
     required String careerId,
     required List<String> userSkills,
   }) async {
@@ -54,7 +56,7 @@ class SkillGapService {
         ? 0
         : ((matchedSkills.length / requiredSkills.length) * 100).round();
 
-    final result = {
+    final resultData = {
       'selectedCareerId': careerId,
       'careerTitle': careerData['title'] ?? '',
       'userSkills': userSkills,
@@ -65,16 +67,18 @@ class SkillGapService {
       'createdAt': FieldValue.serverTimestamp(),
     };
 
-    await _firestore
+    final docRef = await _firestore
         .collection('users')
         .doc(user.uid)
         .collection('skillGapResults')
-        .add(result);
+        .add(resultData);
 
-    return result;
+    final savedDoc = await docRef.get();
+
+    return SkillGapResult.fromFirestore(savedDoc);
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getMySkillGapResults() {
+  Stream<List<SkillGapResult>> getMySkillGapResults() {
     final user = _auth.currentUser;
 
     if (user == null) {
@@ -86,6 +90,9 @@ class SkillGapService {
         .doc(user.uid)
         .collection('skillGapResults')
         .orderBy('createdAt', descending: true)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map(SkillGapResult.fromFirestore).toList();
+    });
   }
 }
