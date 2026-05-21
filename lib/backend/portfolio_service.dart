@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/portfolio_project.dart';
+
 class PortfolioService {
   PortfolioService({
     FirebaseFirestore? firestore,
@@ -24,24 +26,29 @@ class PortfolioService {
       throw Exception('User must be logged in.');
     }
 
-    final docRef = await _firestore
+    final projectRef = _firestore
         .collection('users')
         .doc(user.uid)
         .collection('portfolioProjects')
-        .add({
-      'title': title.trim(),
-      'description': description.trim(),
-      'technologies': technologies,
-      'githubUrl': githubUrl.trim(),
-      'imageUrl': imageUrl.trim(),
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+        .doc();
 
-    return docRef.id;
+    final project = PortfolioProject(
+      id: projectRef.id,
+      title: title.trim(),
+      description: description.trim(),
+      technologies: technologies,
+      githubUrl: githubUrl.trim(),
+      imageUrl: imageUrl.trim(),
+      createdAt: null,
+      updatedAt: null,
+    );
+
+    await projectRef.set(project.toMap());
+
+    return projectRef.id;
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getMyProjects() {
+  Stream<List<PortfolioProject>> getMyProjects() {
     final user = _auth.currentUser;
 
     if (user == null) {
@@ -53,27 +60,54 @@ class PortfolioService {
         .doc(user.uid)
         .collection('portfolioProjects')
         .orderBy('createdAt', descending: true)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map(PortfolioProject.fromFirestore).toList();
+    });
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getProjectById({
+  Future<PortfolioProject?> getProjectById({
     required String projectId,
-  }) {
+  }) async {
     final user = _auth.currentUser;
 
     if (user == null) {
       throw Exception('User must be logged in.');
     }
 
-    return _firestore
+    final doc = await _firestore
         .collection('users')
         .doc(user.uid)
         .collection('portfolioProjects')
         .doc(projectId)
         .get();
+
+    if (!doc.exists) {
+      return null;
+    }
+
+    return PortfolioProject.fromFirestore(doc);
   }
 
   Future<void> updateProject({
+    required String projectId,
+    required PortfolioProject project,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception('User must be logged in.');
+    }
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('portfolioProjects')
+        .doc(projectId)
+        .update(project.toUpdateMap());
+  }
+
+  Future<void> updateProjectFields({
     required String projectId,
     required Map<String, dynamic> projectData,
   }) async {

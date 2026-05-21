@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
+import '../../models/portfolio_project.dart';
 
 import '../../backend/auth_service.dart';
 import '../../backend/portfolio_service.dart';
@@ -76,7 +77,7 @@ class _TestPortfolioScreenState extends State<TestPortfolioScreen> {
         return;
       }
 
-      await _portfolioService.updateProject(
+      await _portfolioService.updateProjectFields(
         projectId: projectId,
         projectData: {
           'description':
@@ -137,7 +138,7 @@ class _TestPortfolioScreenState extends State<TestPortfolioScreen> {
     });
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>>? _projectStream() {
+  Stream<List<PortfolioProject>>? _projectStream() {
     if (_authService.currentUser == null) {
       return null;
     }
@@ -150,9 +151,7 @@ class _TestPortfolioScreenState extends State<TestPortfolioScreen> {
     final stream = _projectStream();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Portfolio Backend Test'),
-      ),
+      appBar: AppBar(title: const Text('Portfolio Backend Test')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -175,15 +174,12 @@ class _TestPortfolioScreenState extends State<TestPortfolioScreen> {
               child: const Text('Delete Last Project'),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: _logout,
-              child: const Text('Logout'),
-            ),
+            OutlinedButton(onPressed: _logout, child: const Text('Logout')),
             const SizedBox(height: 16),
             Expanded(
               child: stream == null
                   ? const Text('Login or create a project to view data.')
-                  : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  : StreamBuilder<List<PortfolioProject>>(
                       stream: stream,
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
@@ -197,31 +193,29 @@ class _TestPortfolioScreenState extends State<TestPortfolioScreen> {
                           );
                         }
 
-                        final docs = snapshot.data?.docs ?? [];
+                        final projects = snapshot.data ?? [];
 
-                        if (docs.isEmpty) {
+                        if (projects.isEmpty) {
                           return const Text('No portfolio projects found.');
                         }
 
                         return ListView.separated(
-                          itemCount: docs.length,
+                          itemCount: projects.length,
                           separatorBuilder: (context, index) =>
                               const SizedBox(height: 8),
                           itemBuilder: (context, index) {
-                            final project = docs[index].data();
-
-                            final technologies = List<String>.from(
-                              project['technologies'] ?? [],
-                            );
+                            final project = projects[index];
 
                             return Card(
                               child: ListTile(
                                 title: Text(
-                                  project['title']?.toString() ?? 'No title',
+                                  project.title.isEmpty
+                                      ? 'No title'
+                                      : project.title,
                                 ),
                                 subtitle: Text(
-                                  '${project['description'] ?? ''}\n\n'
-                                  'Technologies: ${technologies.join(', ')}',
+                                  '${project.description}\n\n'
+                                  'Technologies: ${project.technologies.join(', ')}',
                                 ),
                               ),
                             );
