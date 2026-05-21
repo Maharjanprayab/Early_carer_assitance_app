@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/recommendation_item.dart';
+
 class RecommendationService {
   RecommendationService({
     FirebaseFirestore? firestore,
@@ -39,23 +41,26 @@ class RecommendationService {
             .collection('recommendations')
             .doc();
 
-        batch.set(recommendationRef, {
-          'basedOnCareerId': careerId,
-          'missingSkill': skill,
-          'type': data['type'] ?? 'Course',
-          'title': data['title'] ?? '',
-          'provider': data['provider'] ?? '',
-          'url': data['url'] ?? '',
-          'priority': data['priority'] ?? 'Medium',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        final recommendation = RecommendationItem(
+          id: recommendationRef.id,
+          basedOnCareerId: careerId,
+          missingSkill: skill,
+          type: data['type']?.toString() ?? 'Course',
+          title: data['title']?.toString() ?? '',
+          provider: data['provider']?.toString() ?? '',
+          url: data['url']?.toString() ?? '',
+          priority: data['priority']?.toString() ?? 'Medium',
+          createdAt: null,
+        );
+
+        batch.set(recommendationRef, recommendation.toMap());
       }
     }
 
     await batch.commit();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getMyRecommendations() {
+  Stream<List<RecommendationItem>> getMyRecommendations() {
     final user = _auth.currentUser;
 
     if (user == null) {
@@ -67,7 +72,10 @@ class RecommendationService {
         .doc(user.uid)
         .collection('recommendations')
         .orderBy('createdAt', descending: true)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map(RecommendationItem.fromFirestore).toList();
+    });
   }
 
   Future<void> deleteRecommendation(String recommendationId) async {

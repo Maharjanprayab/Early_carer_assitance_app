@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
+import '../../models/recommendation_item.dart';
 
 import '../../backend/auth_service.dart';
 import '../../backend/recommendation_service.dart';
@@ -53,8 +54,7 @@ class _TestRecommendationScreenState extends State<TestRecommendationScreen> {
       );
 
       setState(() {
-        _message =
-            'Recommendations generated for: ${missingSkills.join(', ')}';
+        _message = 'Recommendations generated for: ${missingSkills.join(', ')}';
       });
     } catch (e) {
       setState(() {
@@ -74,9 +74,7 @@ class _TestRecommendationScreenState extends State<TestRecommendationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recommendation Backend Test'),
-      ),
+      appBar: AppBar(title: const Text('Recommendation Backend Test')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -89,14 +87,13 @@ class _TestRecommendationScreenState extends State<TestRecommendationScreen> {
               child: const Text('Generate Frontend Recommendations'),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: _logout,
-              child: const Text('Logout'),
-            ),
+            OutlinedButton(onPressed: _logout, child: const Text('Logout')),
             const SizedBox(height: 16),
             Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _recommendationService.getMyRecommendations(),
+              child: StreamBuilder<List<RecommendationItem>>(
+                stream: _authService.currentUser == null
+                ? const Stream.empty()
+                : _recommendationService.getMyRecommendations(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Text('Error: ${snapshot.error}');
@@ -106,28 +103,30 @@ class _TestRecommendationScreenState extends State<TestRecommendationScreen> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  final docs = snapshot.data?.docs ?? [];
+                  final recommendations = snapshot.data ?? [];
 
-                  if (docs.isEmpty) {
+                  if (recommendations.isEmpty) {
                     return const Text('No recommendations found yet.');
                   }
 
                   return ListView.separated(
-                    itemCount: docs.length,
+                    itemCount: recommendations.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 8),
                     itemBuilder: (context, index) {
-                      final recommendation = docs[index].data();
+                      final recommendation = recommendations[index];
 
                       return Card(
                         child: ListTile(
                           title: Text(
-                            recommendation['title']?.toString() ?? 'No title',
+                            recommendation.title.isEmpty
+                                ? 'No title'
+                                : recommendation.title,
                           ),
                           subtitle: Text(
-                            '${recommendation['missingSkill']} • '
-                            '${recommendation['provider']} • '
-                            '${recommendation['priority']}',
+                            '${recommendation.missingSkill} • '
+                            '${recommendation.provider} • '
+                            '${recommendation.priority}',
                           ),
                         ),
                       );
