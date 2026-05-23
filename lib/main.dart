@@ -117,6 +117,17 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 10),
               TextButton(
+                onPressed: () {
+                  setState(() {
+                    isLogin = !isLogin;
+                  });
+                },
+                child: Text(
+                  isLogin ? "Create Account" : "Already have account?",
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
                 onPressed: () async {
                   if (emailController.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
