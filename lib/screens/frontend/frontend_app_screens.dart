@@ -796,21 +796,90 @@ class ViewProfileScreen extends StatelessWidget {
   }
 }
 
-class ResumeBuilderScreen extends StatelessWidget {
+class ResumeBuilderScreen extends StatefulWidget {
   const ResumeBuilderScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+  State<ResumeBuilderScreen> createState() => _ResumeBuilderScreenState();
+}
 
-    if (user == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('Please login first')
-        )
+class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
+  final ResumeService _resumeService = ResumeService();
+
+  bool _isSaving = false;
+
+  String get userId => FirebaseAuth.instance.currentUser!.uid;
+
+  Future<void> _saveResume(Map<String, dynamic> profileData) async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final resume = ResumeData(
+        id: '',
+        personalDetails: {
+          'fullName': profileData['name'] ?? profileData['fullName'] ?? '',
+          'email': profileData['email'] ?? '',
+          'phone': profileData['phone'] ?? '',
+          'location': 'Australia',
+        },
+        summary:
+            'Motivated and passionate ${profileData['interestedJob'] ?? profileData['careerInterest'] ?? 'IT student'} seeking opportunities to grow professionally and contribute technical skills to innovative projects.',
+        education: const [
+          {
+            'institution': 'Kent Institute Australia',
+            'degree': 'Bachelor of Information Technology',
+            'startYear': '2024',
+            'endYear': 'Present',
+          }
+        ],
+        skills: _parseSkills(profileData['skillSet']?.toString() ?? ''),
+        projects: const [
+          {
+            'title': 'Early Career Assistance App',
+            'description':
+                'A Flutter and Firebase app that helps students explore careers, analyse skill gaps, build resumes, and showcase projects.',
+            'technologies': ['Flutter', 'Firebase', 'Firestore'],
+          }
+        ],
+        experience: const [],
+        createdAt: null,
+        updatedAt: null,
       );
-    }
 
+      final resumeId = await _resumeService.createResume(resumeData: resume);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Resume saved successfully. ID: $resumeId')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Resume save failed: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  List<String> _parseSkills(String skillsText) {
+    return skillsText
+        .split(',')
+        .map((skill) => skill.trim())
+        .where((skill) => skill.isNotEmpty)
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
@@ -819,27 +888,27 @@ class ResumeBuilderScreen extends StatelessWidget {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        future: FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get(),
-        builder: (context, profileSnapshot) {
-          if (profileSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator()
-            );
+      body: FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
-          if (!profileSnapshot.hasData ||
-          !profileSnapshot.data!.exists ||
-          (profileSnapshot.data!.data()?['hasProfile'] != true)) {
+          if (!snapshot.hasData ||
+              !snapshot.data!.exists ||
+              ((snapshot.data!.data() as Map<String, dynamic>)['hasProfile'] !=
+                  true)) {
             return const Center(
               child: Text('Please create your profile first'),
             );
           }
 
-          final data = profileSnapshot.data!.data() ?? {};
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final name = data['name'] ?? data['fullName'] ?? '';
+          final interestedJob =
+              data['interestedJob'] ?? data['careerInterest'] ?? '';
+          final skills = data['skillSet'] ?? '';
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -867,18 +936,14 @@ class ResumeBuilderScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            data['name']?.toString() ??
-                              data['fullname']?.toString() ??
-                              '',
+                            name.toString(),
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            data['interestedJob']?.toString() ??
-                              data['careerInterest']?.toString() ??
-                              '',
+                            interestedJob.toString(),
                             style: const TextStyle(
                               fontSize: 16,
                               color: Colors.grey,
@@ -890,22 +955,20 @@ class ResumeBuilderScreen extends StatelessWidget {
                     const SizedBox(height: 30),
                     resumeSection(
                       title: 'Contact Information',
-                      content:
-                        '${data['email'] ?? ''}\n${data['phone'] ?? ''}',
+                      content: '${data['email']}\n${data['phone']}',
                     ),
                     resumeSection(
                       title: 'Skills',
-                      content: data['skillSet']?.toString() ?? '',
+                      content: skills.toString(),
                     ),
                     resumeSection(
                       title: 'Career Objective',
                       content:
-                          'Motivated and passionate ${data['interestedJob'] ?? data['careerInterest'] ?? 'IT professional'} seeking opportunities to grow professionally and contribute technical skills to innovative projects.',
+                          'Motivated and passionate $interestedJob seeking opportunities to grow professionally and contribute technical skills to innovative projects.',
                     ),
                     resumeSection(
                       title: 'Education',
-                      content: data['degree']?.toString() ??
-                        'Bachelor of Information Technology',
+                      content: 'Bachelor of Information Technology',
                     ),
                     resumeSection(
                       title: 'Projects',
@@ -921,15 +984,16 @@ class ResumeBuilderScreen extends StatelessWidget {
                           backgroundColor: Colors.indigo,
                           foregroundColor: Colors.white,
                         ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Resume Generated Successfully'),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.download),
-                        label: const Text('Generate Resume'),
+                        onPressed: _isSaving ? null : () => _saveResume(data),
+                        icon: _isSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.save),
+                        label: Text(_isSaving ? 'Saving...' : 'Save Resume'),
                       ),
                     ),
                   ],
@@ -960,10 +1024,7 @@ class ResumeBuilderScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            content,
-            style: const TextStyle(fontSize: 16),
-          ),
+          Text(content, style: const TextStyle(fontSize: 16)),
           const Divider(height: 28),
         ],
       ),
