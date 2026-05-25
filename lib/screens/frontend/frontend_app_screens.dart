@@ -8,7 +8,6 @@ import '../../find_jobs_screen.dart';
 import '../../backend/backend.dart';
 import '../../models/models.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -35,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
           fullName: emailController.text.trim().split('@').first,
           email: emailController.text.trim(),
           password: passwordController.text.trim(),
-          degree: 'Bachelor of IT'
+          degree: 'Bachelor of IT',
         );
       }
 
@@ -47,9 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()))
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -171,7 +170,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -406,8 +404,10 @@ class _ManageUserProfileScreenState extends State<ManageUserProfileScreen> {
           emailController.text = data['email'] ?? user.email ?? '';
           phoneController.text = data['phone'] ?? '';
           skillSetController.text = data['skillSet'] ?? '';
-          selectedJob = 
-            data['interestedJob'] ?? data['careerInterest'] ?? 'Mobile App Developer';
+          selectedJob =
+              data['interestedJob'] ??
+              data['careerInterest'] ??
+              'Mobile App Developer';
           profileExists = true;
         });
       }
@@ -436,25 +436,23 @@ class _ManageUserProfileScreenState extends State<ManageUserProfileScreen> {
         interestedJob: selectedJob,
       );
 
-      if (!mounted) return;    
+      if (!mounted) return;
 
       setState(() {
         profileExists = true;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Save failed: $e'),),
-      );
-    } 
-    
-    catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Save failed: $e')));
+    } catch (e) {
       debugPrint('Save error: $e');
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e'))
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
     }
   }
 
@@ -473,20 +471,17 @@ class _ManageUserProfileScreenState extends State<ManageUserProfileScreen> {
         profileExists = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile deleted'))
-      );
-
-    } 
-    
-    catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile deleted')));
+    } catch (e) {
       debugPrint('Delete error: $e');
-    
+
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delete failed: $e'))
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
     }
   }
 
@@ -623,10 +618,70 @@ class _ManageUserProfileScreenState extends State<ManageUserProfileScreen> {
   }
 }
 
-class ViewProfileScreen extends StatelessWidget {
+class ViewProfileScreen extends StatefulWidget {
   const ViewProfileScreen({super.key});
 
-  String get userId => FirebaseAuth.instance.currentUser!.uid;
+  @override
+  State<ViewProfileScreen> createState() => _ViewProfileScreenState();
+}
+
+class _ViewProfileScreenState extends State<ViewProfileScreen> {
+  final PortfolioService _portfolioService = PortfolioService();
+  final UserService _userService = UserService();
+
+  bool _isAddingProject = false;
+
+  Future<void> _addSampleProject() async {
+    setState(() {
+      _isAddingProject = true;
+    });
+
+    try {
+      await _portfolioService.addProject(
+        title: 'Early Career Assistance App',
+        description:
+            'A Flutter and Firebase app that helps students explore careers, analyse skill gaps, build resumes, and showcase projects.',
+        technologies: ['Flutter', 'Firebase', 'Firestore', 'Firebase Auth'],
+        githubUrl: 'https://github.com/example/early-career-assistance-app',
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Portfolio project added.')));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Add project failed: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddingProject = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _deleteProject(String projectId) async {
+    try {
+      await _portfolioService.deleteProject(projectId: projectId);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Portfolio project deleted.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Delete project failed: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -638,19 +693,16 @@ class ViewProfileScreen extends StatelessWidget {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .get(),
+      body: FutureBuilder<Map<String, dynamic>?>(
+        future: _userService.getCurrentUserProfileData(),
         builder: (context, profileSnapshot) {
           if (profileSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (!profileSnapshot.hasData ||
-          !profileSnapshot.data!.exists ||
-          ((profileSnapshot.data!.data() as Map<String, dynamic>)['hasProfile'] != true)) {
+          final data = profileSnapshot.data;
+
+          if (data == null || data['hasProfile'] != true) {
             return const Center(
               child: Text(
                 'No portfolio found. Please create your profile first.',
@@ -658,7 +710,12 @@ class ViewProfileScreen extends StatelessWidget {
             );
           }
 
-          final data = profileSnapshot.data!.data() as Map<String, dynamic>;
+          final name = data['name'] ?? data['fullName'] ?? '';
+          final careerInterest =
+              data['interestedJob'] ?? data['careerInterest'] ?? '';
+          final email = data['email'] ?? '';
+          final phone = data['phone'] ?? '';
+          final skillSet = data['skillSet'] ?? '';
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -684,7 +741,7 @@ class ViewProfileScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        data['name'] ?? data['fillName'] ?? '',
+                        name.toString(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 26,
@@ -692,7 +749,7 @@ class ViewProfileScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        data['interestedJob'] ?? data['careerInterest'] ?? '',
+                        careerInterest.toString(),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 16,
@@ -704,71 +761,97 @@ class ViewProfileScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                portfolioCard(Icons.email, 'Email', data['email'] ?? ''),
-                portfolioCard(Icons.phone, 'Phone', data['phone'] ?? ''),
-                portfolioCard(
-                  Icons.psychology,
-                  'Skills',
-                  data['skillSet'] ?? '',
-                ),
+                portfolioCard(Icons.email, 'Email', email.toString()),
+                portfolioCard(Icons.phone, 'Phone', phone.toString()),
+                portfolioCard(Icons.psychology, 'Skills', skillSet.toString()),
                 portfolioCard(
                   Icons.work,
                   'Career Interest',
-                  data['interestedJob'] ?? data['careerInterest'] ?? '',
+                  careerInterest.toString(),
                 ),
 
                 const SizedBox(height: 25),
 
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Applied Jobs',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Projects',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: _isAddingProject ? null : _addSampleProject,
+                      icon: _isAddingProject
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.add),
+                      label: Text(_isAddingProject ? 'Adding...' : 'Add'),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 10),
 
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('applied_jobs')
-                      .where('userId', isEqualTo: userId)
-                      .snapshots(),
-                  builder: (context, jobSnapshot) {
-                    if (jobSnapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return const CircularProgressIndicator();
-                    }
-
-                    if (!jobSnapshot.hasData ||
-                        jobSnapshot.data!.docs.isEmpty) {
-                      return const Card(
+                StreamBuilder<List<PortfolioProject>>(
+                  stream: _portfolioService.getMyProjects(),
+                  builder: (context, projectSnapshot) {
+                    if (projectSnapshot.hasError) {
+                      return Card(
                         child: ListTile(
-                          leading: Icon(Icons.info, color: Colors.indigo),
-                          title: Text('No jobs applied yet'),
+                          leading: const Icon(Icons.error, color: Colors.red),
+                          title: Text('Error: ${projectSnapshot.error}'),
                         ),
                       );
                     }
 
-                    final appliedJobs = jobSnapshot.data!.docs;
+                    if (projectSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final projects = projectSnapshot.data ?? [];
+
+                    if (projects.isEmpty) {
+                      return const Card(
+                        child: ListTile(
+                          leading: Icon(Icons.info, color: Colors.indigo),
+                          title: Text('No portfolio projects yet.'),
+                          subtitle: Text(
+                            'Tap Add to create a sample portfolio project.',
+                          ),
+                        ),
+                      );
+                    }
 
                     return Column(
-                      children: appliedJobs.map((doc) {
-                        final job = doc.data() as Map<String, dynamic>;
-
+                      children: projects.map((project) {
                         return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             leading: const Icon(
-                              Icons.work,
+                              Icons.folder,
                               color: Colors.indigo,
                             ),
-                            title: Text(job['jobTitle'] ?? ''),
+                            title: Text(project.title),
                             subtitle: Text(
-                              '${job['company'] ?? ''} • ${job['location'] ?? ''}',
+                              '${project.description}\n\n'
+                              'Technologies: ${project.technologies.join(', ')}',
                             ),
-                            trailing: const Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
+                            isThreeLine: true,
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteProject(project.id),
                             ),
                           ),
                         );
@@ -832,7 +915,7 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
             'degree': 'Bachelor of Information Technology',
             'startYear': '2024',
             'endYear': 'Present',
-          }
+          },
         ],
         skills: _parseSkills(profileData['skillSet']?.toString() ?? ''),
         projects: const [
@@ -841,7 +924,7 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
             'description':
                 'A Flutter and Firebase app that helps students explore careers, analyse skill gaps, build resumes, and showcase projects.',
             'technologies': ['Flutter', 'Firebase', 'Firestore'],
-          }
+          },
         ],
         experience: const [],
         createdAt: null,
@@ -858,9 +941,9 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Resume save failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Resume save failed: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -889,7 +972,10 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
         foregroundColor: Colors.white,
       ),
       body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+        future: FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -957,10 +1043,7 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
                       title: 'Contact Information',
                       content: '${data['email']}\n${data['phone']}',
                     ),
-                    resumeSection(
-                      title: 'Skills',
-                      content: skills.toString(),
-                    ),
+                    resumeSection(title: 'Skills', content: skills.toString()),
                     resumeSection(
                       title: 'Career Objective',
                       content:
@@ -989,8 +1072,9 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.save),
                         label: Text(_isSaving ? 'Saving...' : 'Save Resume'),
@@ -1112,9 +1196,9 @@ class _SkillGapAnalyzerScreenState extends State<SkillGapAnalyzerScreen> {
     final profileData = _profileData;
 
     if (selectedCareer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No career selected.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No career selected.')));
       return;
     }
 
@@ -1131,7 +1215,9 @@ class _SkillGapAnalyzerScreenState extends State<SkillGapAnalyzerScreen> {
 
     if (userSkills.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add skills to your profile first.')),
+        const SnackBar(
+          content: Text('Please add skills to your profile first.'),
+        ),
       );
       return;
     }
@@ -1170,9 +1256,9 @@ class _SkillGapAnalyzerScreenState extends State<SkillGapAnalyzerScreen> {
         _isAnalysing = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Analysis failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Analysis failed: $e')));
     }
   }
 
@@ -1412,9 +1498,7 @@ class RecommendationListScreen extends StatelessWidget {
         stream: recommendationService.getMyRecommendations(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -1525,20 +1609,14 @@ class RecommendedJobListScreen extends StatelessWidget {
                     subtitle: Text('${job['company']} • ${job['location']}'),
                     trailing: ElevatedButton(
                       onPressed: () async {
-                        final userId = FirebaseAuth.instance.currentUser!.uid;
+                        await JobApplicationService().applyForJob(
+                          jobTitle: job['title'] ?? '',
+                          company: job['company'] ?? '',
+                          location: job['location'] ?? '',
+                          category: jobTitle,
+                        );
 
-                        await FirebaseFirestore.instance
-                            .collection('applied_jobs')
-                            .add({
-                              'userId': userId,
-                              'jobTitle': job['title'],
-                              'company': job['company'],
-                              'location': job['location'],
-                              'category': jobTitle,
-                              'appliedAt': FieldValue.serverTimestamp(),
-                            });
-
-                            if (!context.mounted) return;
+                        if (!context.mounted) return;
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
