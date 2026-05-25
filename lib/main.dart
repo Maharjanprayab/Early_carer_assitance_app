@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
-import 'screens/dev_tests/dev_test_menu_screen.dart';
+import 'screens/frontend/frontend_app_screens.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,13 +20,13 @@ class EarlyCareerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Early Career Assistance',
+      title: 'Early Career Assistance App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
       ),
-      home: const DevTestMenuScreen(),
+      home: const LoginScreen(),
     );
   }
 }
