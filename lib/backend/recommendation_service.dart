@@ -15,6 +15,7 @@ class RecommendationService {
 
   Future<void> generateRecommendations({
     required String careerId,
+    required String analysisId,
     required List<String> missingSkills,
   }) async {
     final user = _auth.currentUser;
@@ -43,6 +44,7 @@ class RecommendationService {
 
         final recommendation = RecommendationItem(
           id: recommendationRef.id,
+          analysisId: analysisId,
           basedOnCareerId: careerId,
           missingSkill: skill,
           type: data['type']?.toString() ?? 'Course',

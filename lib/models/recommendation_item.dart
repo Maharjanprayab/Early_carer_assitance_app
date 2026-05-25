@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class RecommendationItem {
   const RecommendationItem({
     required this.id,
+    required this.analysisId,
     required this.basedOnCareerId,
     required this.missingSkill,
     required this.type,
@@ -14,6 +15,7 @@ class RecommendationItem {
   });
 
   final String id;
+  final String analysisId;
   final String basedOnCareerId;
   final String missingSkill;
   final String type;
@@ -30,6 +32,7 @@ class RecommendationItem {
 
     return RecommendationItem(
       id: doc.id,
+      analysisId: data['analysisId']?.toString() ?? '',
       basedOnCareerId: data['basedOnCareerId']?.toString() ?? '',
       missingSkill: data['missingSkill']?.toString() ?? '',
       type: data['type']?.toString() ?? 'Course',
@@ -46,6 +49,7 @@ class RecommendationItem {
   Map<String, dynamic> toMap() {
     return {
       'basedOnCareerId': basedOnCareerId,
+      'analysisId': analysisId,
       'missingSkill': missingSkill,
       'type': type,
       'title': title,
@@ -60,6 +64,7 @@ class RecommendationItem {
 
   RecommendationItem copyWith({
     String? id,
+    String? analysisId,
     String? basedOnCareerId,
     String? missingSkill,
     String? type,
@@ -71,6 +76,7 @@ class RecommendationItem {
   }) {
     return RecommendationItem(
       id: id ?? this.id,
+      analysisId: analysisId ?? this.analysisId,
       basedOnCareerId: basedOnCareerId ?? this.basedOnCareerId,
       missingSkill: missingSkill ?? this.missingSkill,
       type: type ?? this.type,

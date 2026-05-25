@@ -1315,6 +1315,7 @@ class _SkillGapAnalyzerScreenState extends State<SkillGapAnalyzerScreen> {
 
       await _recommendationService.generateRecommendations(
         careerId: result.selectedCareerId,
+        analysisId: result.id,
         missingSkills: result.missingSkills,
       );
 

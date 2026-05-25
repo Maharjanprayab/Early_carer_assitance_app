@@ -47,6 +47,7 @@ class _TestRecommendationScreenState extends State<TestRecommendationScreen> {
 
       await _recommendationService.generateRecommendations(
         careerId: 'frontend_developer',
+        analysisId: skillGapResult.id,
         missingSkills: missingSkills,
       );
 
