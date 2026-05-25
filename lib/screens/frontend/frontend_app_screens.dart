@@ -859,6 +859,86 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     );
                   },
                 ),
+
+                const SizedBox(height: 25),
+
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Applied Jobs',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: JobApplicationService().getMyAppliedJobs(),
+                  builder: (context, jobSnapshot) {
+                    if (jobSnapshot.hasError) {
+                      return Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.error, color: Colors.red),
+                          title: Text('Error: ${jobSnapshot.error}'),
+                        ),
+                      );
+                    }
+
+                    if (jobSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final appliedJobs = jobSnapshot.data?.docs ?? [];
+
+                    if (appliedJobs.isEmpty) {
+                      return const Card(
+                        child: ListTile(
+                          leading: Icon(Icons.info, color: Colors.indigo),
+                          title: Text('No jobs applied yet.'),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: appliedJobs.map((doc) {
+                        final job = doc.data();
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.work,
+                              color: Colors.indigo,
+                            ),
+                            title: Text(job['jobTitle']?.toString() ?? ''),
+                            subtitle: Text(
+                              '${job['company'] ?? ''} • ${job['location'] ?? ''}\n'
+                              'Status: ${job['status'] ?? 'Applied'}',
+                            ),
+                            isThreeLine: true,
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () async {
+                                await JobApplicationService().deleteAppliedJob(
+                                  doc.id,
+                                );
+
+                                if (!context.mounted) return;
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Applied job removed.'),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
               ],
             ),
           );

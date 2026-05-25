@@ -16,6 +16,7 @@ class JobApplicationService {
     required String company,
     required String location,
     required String category,
+    String url = '',
   }) async {
     final user = _auth.currentUser;
 
@@ -28,10 +29,11 @@ class JobApplicationService {
         .doc(user.uid)
         .collection('appliedJobs')
         .add({
-      'jobTitle': jobTitle,
-      'company': company,
-      'location': location,
-      'category': category,
+      'jobTitle': jobTitle.trim(),
+      'company': company.trim(),
+      'location': location.trim(),
+      'category': category.trim(),
+      'url': url.trim(),
       'status': 'Applied',
       'appliedAt': FieldValue.serverTimestamp(),
     });
@@ -50,5 +52,20 @@ class JobApplicationService {
         .collection('appliedJobs')
         .orderBy('appliedAt', descending: true)
         .snapshots();
+  }
+
+  Future<void> deleteAppliedJob(String applicationId) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception('User must be logged in.');
+    }
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('appliedJobs')
+        .doc(applicationId)
+        .delete();
   }
 }
