@@ -6,3 +6,4 @@ export 'resume_service.dart';
 export 'skill_gap_service.dart';
 export 'storage_service.dart';
 export 'user_service.dart';
+export 'seed_data_service.dart';

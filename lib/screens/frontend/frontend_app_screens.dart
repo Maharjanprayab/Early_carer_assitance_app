@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../find_jobs_screen.dart';
 import '../../backend/backend.dart';
+import '../../models/models.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -970,55 +971,162 @@ class ResumeBuilderScreen extends StatelessWidget {
   }
 }
 
-class SkillGapAnalyzerScreen extends StatelessWidget {
+class SkillGapAnalyzerScreen extends StatefulWidget {
   const SkillGapAnalyzerScreen({super.key});
 
-  String get userId => FirebaseAuth.instance.currentUser!.uid;
+  @override
+  State<SkillGapAnalyzerScreen> createState() => _SkillGapAnalyzerScreenState();
+}
 
-  static final Map<String, List<String>> requiredSkills = {
-    'Mobile App Developer': [
-      'Flutter',
-      'Dart',
-      'Firebase',
-      'UI Design',
-      'API Integration',
-    ],
-    'Web Developer': ['HTML', 'CSS', 'JavaScript', 'React', 'Firebase'],
-    'Software Developer': ['Java', 'Python', 'Git', 'SQL', 'Problem Solving'],
-    'Cyber Security Analyst': [
-      'Networking',
-      'Linux',
-      'Security Tools',
-      'Risk Analysis',
-      'SIEM',
-    ],
-    'Data Analyst': [
-      'Excel',
-      'SQL',
-      'Python',
-      'Power BI',
-      'Data Visualization',
-    ],
-    'UI/UX Designer': [
-      'Figma',
-      'Wireframing',
-      'User Research',
-      'Prototyping',
-      'Design Thinking',
-    ],
-    'Cloud Engineer': ['AWS', 'Azure', 'Firebase', 'Docker', 'Cloud Security'],
-  };
+class _SkillGapAnalyzerScreenState extends State<SkillGapAnalyzerScreen> {
+  final UserService _userService = UserService();
+  final CareerService _careerService = CareerService();
+  final SkillGapService _skillGapService = SkillGapService();
+  final RecommendationService _recommendationService = RecommendationService();
 
-  List<String> cleanSkills(String skillsText) {
+  bool _isLoading = true;
+  bool _isAnalysing = false;
+
+  Map<String, dynamic>? _profileData;
+  List<Career> _careers = [];
+  Career? _selectedCareer;
+  SkillGapResult? _latestResult;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final profileData = await _userService.getCurrentUserProfileData();
+      final careers = await _careerService.getCareers().first;
+
+      Career? selectedCareer;
+
+      if (profileData != null) {
+        final interestedJob =
+            profileData['interestedJob'] ?? profileData['careerInterest'];
+
+        if (interestedJob != null && interestedJob.toString().isNotEmpty) {
+          selectedCareer = careers.where((career) {
+            return career.title.toLowerCase() ==
+                interestedJob.toString().toLowerCase();
+          }).firstOrNull;
+        }
+      }
+
+      selectedCareer ??= careers.isNotEmpty ? careers.first : null;
+
+      if (!mounted) return;
+
+      setState(() {
+        _profileData = profileData;
+        _careers = careers;
+        _selectedCareer = selectedCareer;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<String> _parseUserSkills(String skillsText) {
     return skillsText
         .split(',')
-        .map((skill) => skill.trim().toLowerCase())
+        .map((skill) => skill.trim())
         .where((skill) => skill.isNotEmpty)
         .toList();
   }
 
+  Future<void> _analyseSkillGap() async {
+    final selectedCareer = _selectedCareer;
+    final profileData = _profileData;
+
+    if (selectedCareer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No career selected.')),
+      );
+      return;
+    }
+
+    if (profileData == null || profileData['hasProfile'] != true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please create your profile first.')),
+      );
+      return;
+    }
+
+    final userSkills = _parseUserSkills(
+      profileData['skillSet']?.toString() ?? '',
+    );
+
+    if (userSkills.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add skills to your profile first.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isAnalysing = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await _skillGapService.analyseSkillGap(
+        careerId: selectedCareer.id,
+        userSkills: userSkills,
+      );
+
+      await _recommendationService.generateRecommendations(
+        careerId: result.selectedCareerId,
+        missingSkills: result.missingSkills,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _latestResult = result;
+        _isAnalysing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Skill gap analysis completed.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = e.toString();
+        _isAnalysing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Analysis failed: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final profileData = _profileData;
+    final latestResult = _latestResult;
+
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF4F6FA),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
@@ -1027,92 +1135,117 @@ class SkillGapAnalyzerScreen extends StatelessWidget {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .get(),
-        builder: (context, profileSnapshot) {
-          if (profileSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!profileSnapshot.hasData ||
-          !profileSnapshot.data!.exists ||
-          ((profileSnapshot.data!.data() as Map<String, dynamic>)['hasProfile'] != true)) {
-            return const Center(
-              child: Text('Please create your profile first.'),
-            );
-          }
-
-          final data = profileSnapshot.data!.data() as Map<String, dynamic>;
-
-          final userSkills = cleanSkills(data['skillSet'] ?? '');
-          final interestedJob = data['interestedJob'] ?? data['careerInterest'] ?? 'Mobile App Developer';
-
-          final required = requiredSkills[interestedJob] ?? [];
-
-          final matchedSkills = required.where((skill) {
-            return userSkills.contains(skill.toLowerCase());
-          }).toList();
-
-          final missingSkills = required.where((skill) {
-            return !userSkills.contains(skill.toLowerCase());
-          }).toList();
-
-          final matchPercent = required.isEmpty
-              ? 0
-              : ((matchedSkills.length / required.length) * 100).round();
-          final recommendedJobs = requiredSkills.entries.map((entry) {
-            final jobTitle = entry.key;
-            final jobSkills = entry.value;
-
-            final matched = jobSkills.where((skill) {
-              return userSkills.contains(skill.toLowerCase());
-            }).length;
-
-            final percent = ((matched / jobSkills.length) * 100).round();
-
-            return {"job": jobTitle, "percent": percent};
-          }).toList();
-
-          recommendedJobs.sort(
-            (a, b) => (b["percent"] as int).compareTo(a["percent"] as int),
-          );
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Card(
-                  color: Colors.indigo,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.analytics,
-                          color: Colors.white,
-                          size: 45,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            '$matchPercent% Match for $interestedJob',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_errorMessage != null)
+              Card(
+                color: Colors.red.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 20),
+            if (profileData == null || profileData['hasProfile'] != true)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Please create your profile first.'),
+                ),
+              )
+            else ...[
+              Card(
+                color: Colors.indigo,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.analytics,
+                        color: Colors.white,
+                        size: 45,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          latestResult == null
+                              ? 'Analyse your skills against career requirements'
+                              : '${latestResult.matchPercentage}% Match for ${latestResult.careerTitle}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Text(
+                'Your Skills: ${profileData['skillSet'] ?? ''}',
+                style: const TextStyle(fontSize: 16),
+              ),
+
+              const SizedBox(height: 20),
+
+              DropdownButtonFormField<Career>(
+                initialValue: _selectedCareer,
+                decoration: InputDecoration(
+                  labelText: 'Select Career',
+                  prefixIcon: const Icon(Icons.work),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                items: _careers.map((career) {
+                  return DropdownMenuItem<Career>(
+                    value: career,
+                    child: Text(career.title),
+                  );
+                }).toList(),
+                onChanged: (career) {
+                  setState(() {
+                    _selectedCareer = career;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: _isAnalysing ? null : _analyseSkillGap,
+                  icon: _isAnalysing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.analytics),
+                  label: Text(_isAnalysing ? 'Analysing...' : 'Analyse Skills'),
+                ),
+              ),
+
+              if (latestResult != null) ...[
+                const SizedBox(height: 25),
 
                 const Text(
                   'Matched Skills',
@@ -1121,13 +1254,13 @@ class SkillGapAnalyzerScreen extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                if (matchedSkills.isEmpty)
+                if (latestResult.matchedSkills.isEmpty)
                   const Text('No matching skills found yet.')
                 else
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: matchedSkills.map((skill) {
+                    children: latestResult.matchedSkills.map((skill) {
                       return Chip(
                         label: Text(skill),
                         avatar: const Icon(Icons.check, color: Colors.green),
@@ -1144,13 +1277,13 @@ class SkillGapAnalyzerScreen extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                if (missingSkills.isEmpty)
+                if (latestResult.missingSkills.isEmpty)
                   const Text('Great! You have all required skills.')
                 else
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: missingSkills.map((skill) {
+                    children: latestResult.missingSkills.map((skill) {
                       return Chip(
                         label: Text(skill),
                         avatar: const Icon(Icons.close, color: Colors.red),
@@ -1164,51 +1297,97 @@ class SkillGapAnalyzerScreen extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      missingSkills.isEmpty
+                      latestResult.missingSkills.isEmpty
                           ? 'Recommendation: You are strongly prepared for this role.'
-                          : 'Recommendation: Focus on learning ${missingSkills.join(", ")} to improve your career readiness.',
+                          : 'Recommendation: Focus on learning ${latestResult.missingSkills.join(", ")} to improve your career readiness.',
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
                 ),
-                const SizedBox(height: 25),
 
-                const Text(
-                  'Recommended Jobs Based on Your Skills',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
+                const SizedBox(height: 20),
 
-                const SizedBox(height: 10),
-
-                Column(
-                  children: recommendedJobs.take(5).map((job) {
-                    return Card(
-                      child: ListTile(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RecommendedJobListScreen(
-                                jobTitle: job["job"].toString(),
-                              ),
-                            ),
-                          );
-                        },
-                        leading: const Icon(Icons.work, color: Colors.indigo),
-                        title: Text(job["job"].toString()),
-                        trailing: Text(
-                          '${job["percent"]}%',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.indigo,
-                          ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RecommendationListScreen(),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    },
+                    icon: const Icon(Icons.recommend),
+                    label: const Text('View Learning Recommendations'),
+                  ),
                 ),
               ],
-            ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class RecommendationListScreen extends StatelessWidget {
+  const RecommendationListScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final recommendationService = RecommendationService();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F6FA),
+      appBar: AppBar(
+        title: const Text('Recommendations'),
+        centerTitle: true,
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+      ),
+      body: StreamBuilder<List<RecommendationItem>>(
+        stream: recommendationService.getMyRecommendations(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final recommendations = snapshot.data ?? [];
+
+          if (recommendations.isEmpty) {
+            return const Center(
+              child: Text('No recommendations generated yet.'),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: recommendations.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final item = recommendations[index];
+
+              return Card(
+                child: ListTile(
+                  leading: const Icon(Icons.school, color: Colors.indigo),
+                  title: Text(item.title.isEmpty ? 'No title' : item.title),
+                  subtitle: Text(
+                    '${item.missingSkill} • ${item.provider}\n${item.type} • ${item.priority}',
+                  ),
+                  trailing: item.url.isEmpty
+                      ? null
+                      : const Icon(Icons.open_in_new),
+                ),
+              );
+            },
           );
         },
       ),
